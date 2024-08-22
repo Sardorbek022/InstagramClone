@@ -12,7 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from shared.utility import send_email, check_email_or_phone
-from .serializers import SignUpSerializer
+from .serializers import SignUpSerializer, ChangeUserInformation, ChangeUserPhotoSerializer
 from .models import User, DONE, CODE_VERIFIED, NEW, VIA_EMAIL, VIA_PHONE
 
 
@@ -89,3 +89,47 @@ class GetNewVerification(APIView):
                 "message": "Kodingiz hali ishlatish uchun yaroqli. Biroz kutib turing"
             }
             raise ValidationError(data)
+        
+
+class ChangeUserInformationView(UpdateAPIView):
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = ChangeUserInformation
+    http_method_names = ['patch', 'put']
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        super(ChangeUserInformationView, self).update(request, *args, **kwargs)
+        data = {
+            'success': True,
+            "message": "User updated successfully",
+            'auth_status': self.request.user.auth_status,
+        }
+        return Response(data, status=200)
+
+    def partial_update(self, request, *args, **kwargs):
+        super(ChangeUserInformationView, self).partial_update(request, *args, **kwargs)
+        data = {
+            'success': True,
+            "message": "User updated successfully",
+            'auth_status': self.request.user.auth_status,
+        }
+        return Response(data, status=200)
+    
+
+
+class ChangeUserPhotoView(APIView):
+    permission_classes = [IsAuthenticated, ]
+
+    def put(self, request, *args, **kwargs):
+        serializer = ChangeUserPhotoSerializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            serializer.update(user, serializer.validated_data)
+            return Response({
+                'message': "Rasm muvaffaqiyatli o'zgartirildi"
+            }, status=200)
+        return Response(
+            serializer.errors, status=400
+        )
